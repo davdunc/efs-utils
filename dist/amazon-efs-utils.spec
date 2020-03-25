@@ -9,6 +9,8 @@
 %if 0%{?amzn1}
 %global python_requires system-python
 
+%elseif 0%{?fedora} >= 30 || 0%{?rhel} >= 8
+%global python_requires python3
 %else
 %global python_requires python2
 %endif
@@ -23,14 +25,20 @@ Name      : amazon-efs-utils
 Version   : 1.21
 Release   : 1%{?dist}
 Summary   : This package provides utilities for simplifying the use of EFS file systems
-
-Group     : Amazon/Tools
 License   : MIT
 URL       : https://aws.amazon.com/efs
 
+%if 0%{?fedora} || 0%{?rhel}
+## The Packager:, and Vendor: tags MUST NOT be used
+## The Group: tag SHOULD NOT be used
+## The Source: tags document where to find the upstream sources for the package
+Source    : https://github.com/aws/efs-utils/archive/v%{version}/%{name}-%{version}.tar.gz
+%else
+Group     : Amazon/Tools
+Source    : %{name}.tar.gz
 Packager  : Amazon.com, Inc. <http://aws.amazon.com>
 Vendor    : Amazon.com
-
+%endif
 BuildArch : noarch
 
 Requires  : nfs-utils
@@ -39,6 +47,7 @@ Requires  : %{python_requires}
 
 %if %{with_systemd}
 BuildRequires    : systemd
+BuildRequires    : systemd-rpm-macros
 %{?systemd_requires}
 %else
 Requires(post)   : /sbin/chkconfig
@@ -46,13 +55,12 @@ Requires(preun)  : /sbin/service /sbin/chkconfig
 Requires(postun) : /sbin/service
 %endif
 
-Source    : %{name}.tar.gz
 
 %description
 This package provides utilities for simplifying the use of EFS file systems
 
 %prep
-%setup -n %{name}
+%setup -q -n %{name}
 
 %install
 mkdir -p %{buildroot}%{_sysconfdir}/amazon/efs
