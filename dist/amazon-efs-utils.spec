@@ -4,13 +4,16 @@
 # Licensed under the MIT License. See the LICENSE accompanying this file
 # for the specific language governing permissions and limitations under
 # the License.
-#
 
+# Added to fix the short name for the base directory in later versions
+%global short_name efs-utils
+
+%bcond_with test
 %if 0%{?amzn1}
 %global python_requires system-python
-
 %elseif 0%{?fedora} >= 30 || 0%{?rhel} >= 8
 %global python_requires python3
+%global long_name %{name}-v%{version}
 %else
 %global python_requires python2
 %endif
@@ -21,8 +24,8 @@
 %global with_systemd 1
 %endif
 
-Name      : amazon-efs-utils
-Version   : 1.21
+Name      : amazon-%{short_name}
+Version   : 1.24
 Release   : 1%{?dist}
 Summary   : This package provides utilities for simplifying the use of EFS file systems
 License   : MIT
@@ -32,7 +35,7 @@ URL       : https://aws.amazon.com/efs
 ## The Packager:, and Vendor: tags MUST NOT be used
 ## The Group: tag SHOULD NOT be used
 ## The Source: tags document where to find the upstream sources for the package
-Source0    : https://github.com/aws/efs-utils/archive/v%{version}/%{name}-v%{version}.tar.gz
+Source0    : https://github.com/aws/efs-utils/archive/v%{version}/%{short_name}-v%{version}.tar.gz
 %else
 Group     : Amazon/Tools
 # Source    : %{name}.tar.gz
@@ -59,17 +62,26 @@ Requires(postun) : /sbin/service
 %description
 This package provides utilities for simplifying the use of EFS file systems
 
-%prep -n %{name}-v%{version}
-%setup -q -n %{name}-v%{version}
-%build -n %{name}-v%{version}
+%prep -n %{short_name}-%{version}
+%setup -q -n %{short_name}-%{version}
+%build -n %{short_name}-%{version}
+%if 0%{?rhel} > 7 || 0%{?fedora}
+# Replace the first line in .py to "#!/usr/bin/env python3" no matter what it was before
+sed -i -e '1 s/^.*$/\#!\/usr\/bin\/env python3/' src/watchdog/__init__.py
+sed -i -e '1 s/^.*$/\#!\/usr\/bin\/env python3/' src/mount_efs/__init__.py
+%endif
+
+
 %install
+mkdir -p %{buildroot}%{_bindir}
 mkdir -p %{buildroot}%{_sysconfdir}/amazon/efs
+
 %if %{with_systemd}
 mkdir -p %{buildroot}%{_unitdir}
-install -p -m 644 %{_builddir}/%{name}/dist/amazon-efs-mount-watchdog.service %{buildroot}%{_unitdir}
+install -p -m 644 dist/amazon-efs-mount-watchdog.service %{buildroot}%{_unitdir}
 %else
 mkdir -p %{buildroot}%{_sysconfdir}/init
-install -p -m 644 %{_builddir}/%{name}/dist/amazon-efs-mount-watchdog.conf %{buildroot}%{_sysconfdir}/init
+install -p -m 644 %{_builddir}/%{short_name}/dist/amazon-efs-mount-watchdog.conf %{buildroot}%{_sysconfdir}/init
 %endif
 
 mkdir -p %{buildroot}/sbin
@@ -77,11 +89,11 @@ mkdir -p %{buildroot}%{_bindir}
 mkdir -p %{buildroot}%{_localstatedir}/log/amazon/efs
 mkdir -p  %{buildroot}%{_mandir}/man8
 
-install -p -m 644 %{_builddir}/%{name}/dist/efs-utils.conf %{buildroot}%{_sysconfdir}/amazon/efs
-install -p -m 444 %{_builddir}/%{name}/dist/efs-utils.crt %{buildroot}%{_sysconfdir}/amazon/efs
-install -p -m 755 %{_builddir}/%{name}/src/mount_efs/__init__.py %{buildroot}/sbin/mount.efs
-install -p -m 755 %{_builddir}/%{name}/src/watchdog/__init__.py %{buildroot}%{_bindir}/amazon-efs-mount-watchdog
-install -p -m 644 %{_builddir}/%{name}/man/mount.efs.8 %{buildroot}%{_mandir}/man8
+install -p -m 644 dist/efs-utils.conf %{buildroot}%{_sysconfdir}/amazon/efs
+install -p -m 444 dist/efs-utils.crt %{buildroot}%{_sysconfdir}/amazon/efs
+install -p -m 755 src/mount_efs/__init__.py %{buildroot}/sbin/mount.efs
+install -p -m 755 src/watchdog/__init__.py %{buildroot}%{_bindir}/amazon-efs-mount-watchdog
+install -p -m 644 man/mount.efs.8 %{buildroot}%{_mandir}/man8
 
 %files
 %defattr(-,root,root,-)
@@ -121,5 +133,17 @@ if [ $1 -eq 1 ]; then
 fi
 
 %endif
-
+%if 0%{?rhel} || 0%{?fedora}
+# The %clean section SHOULD NOT be used.
+%else
 %clean
+%endif
+%if %{with test}
+%check
+pytest
+flake8
+%endif
+%changelog
+* Wed Mar 25 2020 David Duncan <davdunc@amazon.com> - 1.24-1
+- Update to latest release
+
