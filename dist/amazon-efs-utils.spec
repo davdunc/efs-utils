@@ -32,10 +32,10 @@ URL       : https://aws.amazon.com/efs
 ## The Packager:, and Vendor: tags MUST NOT be used
 ## The Group: tag SHOULD NOT be used
 ## The Source: tags document where to find the upstream sources for the package
-Source    : https://github.com/aws/efs-utils/archive/v%{version}/%{name}-%{version}.tar.gz
+Source0    : https://github.com/aws/efs-utils/archive/v%{version}/%{name}-v%{version}.tar.gz
 %else
 Group     : Amazon/Tools
-Source    : %{name}.tar.gz
+# Source    : %{name}.tar.gz
 Packager  : Amazon.com, Inc. <http://aws.amazon.com>
 Vendor    : Amazon.com
 %endif
@@ -59,9 +59,9 @@ Requires(postun) : /sbin/service
 %description
 This package provides utilities for simplifying the use of EFS file systems
 
-%prep
-%setup -q -n %{name}
-
+%prep -n %{name}-v%{version}
+%setup -q -n %{name}-v%{version}
+%build -n %{name}-v%{version}
 %install
 mkdir -p %{buildroot}%{_sysconfdir}/amazon/efs
 %if %{with_systemd}
