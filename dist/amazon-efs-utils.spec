@@ -47,7 +47,9 @@ BuildArch : noarch
 Requires  : nfs-utils
 Requires  : stunnel >= 4.56
 Requires  : %{python_requires}
-
+%if %{with test}
+BuildRequires    : python3-pytest
+%endif
 %if %{with_systemd}
 BuildRequires    : systemd
 BuildRequires    : systemd-rpm-macros
@@ -140,7 +142,7 @@ fi
 %endif
 %if %{with test}
 %check
-pytest
+pytest-3
 flake8
 %endif
 %changelog
