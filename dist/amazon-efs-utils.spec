@@ -11,11 +11,14 @@
 %bcond_with test
 %if 0%{?amzn1}
 %global python_requires system-python
+%global pytest pytest
 %elseif 0%{?fedora} >= 30 || 0%{?rhel} >= 8
 %global python_requires python3
+%global pytest pytest-3
 %global long_name %{name}-v%{version}
 %else
 %global python_requires python2
+%global pytest pytest-2
 %endif
 
 %if 0%{?amzn1} || 0%{?rhel} == 6
@@ -142,7 +145,8 @@ fi
 %endif
 %if %{with test}
 %check
-pytest-3
+%{pytest} 
+
 flake8
 %endif
 %changelog
